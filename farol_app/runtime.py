@@ -65,8 +65,31 @@ def find_engine(refresh: bool = False) -> dict | None:
         found = {"kind": "llama-cpp-python", "path": str(venv_python())}
     if not found and importlib.util.find_spec("llama_cpp"):
         found = {"kind": "llama-cpp-python", "path": sys.executable}
+    if found:
+        found["gpu"] = engine_supports_gpu(found)
     _engine_cache["v"] = found
     return found
+
+
+def engine_supports_gpu(eng: dict) -> bool | None:
+    """O motor instalado consegue usar a placa de vídeo? (None = não deu para saber)
+
+    Importante: a versão "só CPU" aceita a opção de camadas na GPU e simplesmente
+    ignora, então sem esta checagem a tela diria GPU enquanto tudo roda na CPU.
+    """
+    try:
+        if eng["kind"] == "llama-cpp-python":
+            r = subprocess.run([eng["path"], "-c", "import llama_cpp; print(llama_cpp.llama_supports_gpu_offload())"],
+                               capture_output=True, text=True, timeout=60)
+            out = r.stdout.strip().splitlines()
+            return out[-1] == "True" if r.returncode == 0 and out else None
+        r = subprocess.run([eng["path"], "--list-devices"], capture_output=True, text=True, timeout=60)
+        if r.returncode != 0:
+            return None
+        text = (r.stdout + r.stderr).lower()
+        return any(k in text for k in ("cuda", "vulkan", "metal", "rocm", "sycl", "hip"))
+    except Exception:
+        return None
 
 
 # ------------------------------------------------------------------ instalação
@@ -313,7 +336,8 @@ installer = Installer()
 
 # ---------------------------------------------------------- ajuste automático
 
-def tune(model_path: str, hw: dict, bench: dict | None, max_ctx: int | None = None) -> dict:
+def tune(model_path: str, hw: dict, bench: dict | None, max_ctx: int | None = None,
+         engine_gpu: bool | None = None) -> dict:
     """Escolhe camadas na GPU, contexto, threads e flash attention para esta máquina."""
     files = _parts(Path(model_path))
     size_gb = sum(f.stat().st_size for f in files) / GB
@@ -331,6 +355,9 @@ def tune(model_path: str, hw: dict, bench: dict | None, max_ctx: int | None = No
     gpu = max(hw.get("gpus") or [], key=lambda g: g.get("vram_gb") or 0, default=None)
     unified = bool(gpu and gpu.get("unified"))
     vram = (gpu["vram_gb"] if unified else (gpu["vram_gb"] or 0) - 0.5) if gpu and gpu.get("vram_gb") else 0
+    cpu_only_engine = bool(gpu) and engine_gpu is False
+    if cpu_only_engine:
+        vram = 0  # a placa existe, mas o motor instalado não sabe usá-la
 
     cands = [c for c in (32768, 16384, 8192, 4096, 2048) if c <= min(train_ctx, max_ctx or 32768)] or [2048]
     # contexto padrão: até 8k (mais que isso só se pedido), o resto vira velocidade
@@ -353,7 +380,11 @@ def tune(model_path: str, hw: dict, bench: dict | None, max_ctx: int | None = No
     else:
         ctx = next((c for c in cands if need(c) <= ram_usable), cands[-1])
         ngl = 0
-        notes.append("Sem GPU utilizável: roda na CPU usando a RAM.")
+        if cpu_only_engine:
+            notes.append("O motor instalado é a versão só CPU e não usa a sua placa de vídeo. "
+                         "Instale o motor oficial do llama.cpp para rodar na GPU.")
+        else:
+            notes.append("Sem GPU utilizável: roda na CPU usando a RAM.")
 
     cores = hw.get("cores") or os.cpu_count() or 4
     threads = cores if ngl <= layers // 2 else max(2, min(cores, 4))
@@ -374,6 +405,7 @@ def tune(model_path: str, hw: dict, bench: dict | None, max_ctx: int | None = No
         "model_ctx_max": train_ctx,
         "arch": meta.get("arch"),
         "notes": notes,
+        "engine_cpu_only": cpu_only_engine,
     }
 
 
@@ -474,7 +506,7 @@ class Engine:
             raise RuntimeError("Nenhum motor instalado. Clique em \"Instalar motor\" em Meus modelos.")
         if not Path(model_path).exists():
             raise RuntimeError("Arquivo do modelo não encontrado.")
-        s = tune(model_path, hw, bench, (overrides or {}).get("n_ctx"))
+        s = tune(model_path, hw, bench, (overrides or {}).get("n_ctx"), eng.get("gpu"))
         for k, v in (overrides or {}).items():
             if v not in (None, "") and k in s:
                 s[k] = type(s[k])(v) if not isinstance(s[k], bool) else bool(v)

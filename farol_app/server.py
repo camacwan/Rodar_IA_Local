@@ -159,7 +159,8 @@ class Handler(BaseHTTPRequestHandler):
             p = Path(q["path"]).resolve()
             if config.models_dir().resolve() not in p.parents:
                 raise ValueError("Modelo fora da pasta do Farol.")
-            self._json(tune(str(p), _hw(), config.get("benchmark")))
+            eng = find_engine() or {}
+            self._json(tune(str(p), _hw(), config.get("benchmark"), engine_gpu=eng.get("gpu")))
         elif r == "/api/agent":
             self._json(agent.state(int(q.get("since", 0))))
         elif r == "/api/agent/models":

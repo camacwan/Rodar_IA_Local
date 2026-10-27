@@ -471,7 +471,9 @@ window.startEngine = async (p, overrides) => {
 let instTimer = null;
 async function renderInstall(e){
   const box = $('#installBox');
-  const wantSwitch = e.crashed && e.engine?.kind === 'llama-cpp-python';
+  const hasGpu = (HW?.hardware?.gpus || []).length > 0;
+  const cpuOnly = e.engine?.gpu === false && hasGpu;
+  const wantSwitch = (e.crashed && e.engine?.kind === 'llama-cpp-python') || cpuOnly;
   if (e.engine && !wantSwitch && !instTimer){ box.innerHTML = ''; return }
   const s = await api('/api/engine/install');
   const busy = s.status === 'instalando';
@@ -486,6 +488,7 @@ async function renderInstall(e){
       <h3>${s.status==='concluído' ? 'Motor instalado' : wantSwitch ? 'Trocar de motor' : 'Instalar o motor'}</h3>
       <p class="muted" style="margin:0 0 12px;font-size:14px">${s.status==='concluído'
         ? 'Pronto. Escolha um modelo abaixo e clique em Iniciar.'
+        : cpuOnly ? 'O motor instalado é a versão só CPU: ele ignora a sua placa de vídeo, por isso a geração fica lenta. Instale o motor oficial do llama.cpp, que já vem com suporte à GPU.'
         : wantSwitch ? 'O llama-cpp-python não conseguiu abrir este modelo. O motor oficial do llama.cpp costuma resolver: é mais atualizado e mais estável no Windows.'
         : 'O motor é o programa que roda o modelo. O Farol baixa a versão certa para a sua placa de vídeo.'}</p>
       ${s.status!=='concluído' ? `<div class="roles" style="grid-template-columns:1fr 1fr">${opts}</div>` : ''}
@@ -507,6 +510,7 @@ function renderTuned(e){
   const gpuTxt = s.n_gpu_layers >= 999 ? `${s.layers}/${s.layers}` : `${s.n_gpu_layers}/${s.layers}`;
   box.innerHTML = `
     <h3>Ajustado para esta máquina</h3>
+    ${s.engine_cpu_only ? '<div class="warnbox" style="margin:10px 0 0">O motor atual não usa a placa de vídeo. Instale o motor oficial no topo desta aba para rodar na GPU.</div>' : ''}
     <div class="tuned">
       <div><b class="num">${gpuTxt}</b><span>camadas na GPU</span></div>
       <div><b class="num">${s.n_ctx.toLocaleString('pt-BR')}</b><span>tokens de contexto</span></div>

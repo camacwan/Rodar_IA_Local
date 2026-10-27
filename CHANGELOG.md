@@ -2,6 +2,15 @@
 
 Mudanças de cada versão do Farol.
 
+## v0.3.2 — 2026-10-26
+
+### Corrigido
+- A tela mostrava "32/32 camadas na GPU" mesmo quando o motor instalado era a versão só CPU do llama-cpp-python, que ignora a placa de vídeo. Agora o Farol verifica se o motor usa a GPU de verdade (`llama_supports_gpu_offload` no llama-cpp-python, `--list-devices` no llama-server) e ajusta as camadas e o aviso de acordo.
+- Com o motor só CPU, o ajuste usava apenas 4 threads, pensando que a GPU faria o trabalho. Agora usa todos os núcleos físicos.
+
+### Adicionado
+- Quando a máquina tem placa de vídeo e o motor instalado é só CPU, a aba Meus modelos sugere instalar o motor oficial do llama.cpp.
+
 ## v0.3.1 — 2026-10-26
 
 ### Corrigido
