@@ -1,0 +1,700 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Farol</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#E9EDF0; --panel:#FFFFFF; --ink:#18232E; --steel:#5A6977; --line:#CBD3DA; --soft:#F3F5F7;
+  --accent:#2C5D86;
+  --go:#1E9E57; --wait:#E0A100; --stop:#D2433F; --off:#C9D0D6;
+  --head:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --body:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121A21; --panel:#1A242D; --ink:#E3E9EE; --steel:#93A3B1; --line:#2E3B47; --soft:#202C36;
+  --accent:#7FB0DA; --off:#33414D;
+}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 var(--body)}
+button,input{font:inherit;color:inherit}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* topo */
+header{display:flex;align-items:center;gap:20px;flex-wrap:wrap;padding:18px 28px;border-bottom:1px solid var(--line);background:var(--panel)}
+.brand{display:flex;align-items:center;gap:12px}
+.brand h1{font:700 26px/1 var(--head);margin:0;letter-spacing:-.02em}
+.machine{color:var(--steel);font-size:13.5px}
+.engine-pill{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:13.5px;padding:6px 12px;border:1px solid var(--line);border-radius:999px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--off)}
+.dot.on{background:var(--go);box-shadow:0 0 0 3px color-mix(in srgb,var(--go) 25%,transparent)}
+.dot.warm{background:var(--wait)}
+nav{display:flex;gap:4px;padding:0 20px;background:var(--panel);border-bottom:1px solid var(--line);overflow-x:auto}
+nav button{border:0;background:none;padding:13px 14px;cursor:pointer;color:var(--steel);border-bottom:2px solid transparent;font-weight:500;white-space:nowrap}
+nav button[aria-selected="true"]{color:var(--ink);border-color:var(--ink)}
+main{max-width:1080px;margin:0 auto;padding:28px 24px 80px}
+section[hidden]{display:none}
+h2{font:700 30px/1.1 var(--head);margin:0 0 6px;letter-spacing:-.02em}
+h3{font:600 17px/1.3 var(--body);margin:0 0 10px}
+.lede{color:var(--steel);margin:0 0 24px;max-width:62ch}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:20px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:760px){.grid2{grid-template-columns:1fr}header{padding:14px 16px}main{padding:20px 16px 60px}}
+.btn{border:1px solid var(--ink);background:var(--ink);color:var(--panel);padding:9px 16px;border-radius:5px;cursor:pointer;font-weight:500}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.small{padding:5px 11px;font-size:13.5px}
+.btn:disabled{opacity:.5;cursor:default}
+.muted{color:var(--steel)}
+.err{color:var(--stop)}
+dl.specs{display:grid;grid-template-columns:max-content 1fr;gap:8px 18px;margin:0}
+dl.specs dt{color:var(--steel)} dl.specs dd{margin:0;font-weight:500}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* o farol: elemento principal da identidade */
+.farol{display:inline-flex;flex-direction:column;gap:4px;padding:5px;background:#1D2730;border-radius:999px;flex:none}
+.farol i{width:12px;height:12px;border-radius:50%;background:#3A4651;display:block}
+.farol.lg{gap:6px;padding:7px}.farol.lg i{width:20px;height:20px}
+.farol[data-l="vermelho"] i:nth-child(1){background:var(--stop);box-shadow:0 0 10px var(--stop)}
+.farol[data-l="amarelo"] i:nth-child(2){background:var(--wait);box-shadow:0 0 10px var(--wait)}
+.farol[data-l="verde"] i:nth-child(3){background:var(--go);box-shadow:0 0 10px var(--go)}
+.word-verde{color:var(--go)}.word-amarelo{color:#B07E00}.word-vermelho{color:var(--stop)}
+@media (prefers-color-scheme:dark){.word-amarelo{color:var(--wait)}}
+
+/* escada de tamanhos */
+.ladder{display:grid;grid-template-columns:repeat(8,1fr);gap:8px;margin-top:6px}
+@media (max-width:760px){.ladder{grid-template-columns:repeat(4,1fr)}}
+.rung{display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 6px;border:1px solid var(--line);border-radius:6px;background:var(--soft);text-align:center}
+.rung b{font:700 20px/1 var(--head)}
+.rung small{color:var(--steel);font-size:12px;line-height:1.3}
+
+/* listas */
+.search{display:flex;gap:8px;margin-bottom:18px}
+.search input{flex:1;padding:10px 12px;border:1px solid var(--line);border-radius:5px;background:var(--panel)}
+.rows{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:6px;background:var(--panel);overflow:hidden}
+.row{display:flex;align-items:center;gap:14px;padding:13px 16px;border-top:1px solid var(--line);text-align:left;background:none;border-left:0;border-right:0;border-bottom:0;width:100%;cursor:pointer}
+.row:first-child{border-top:0}
+.row:hover{background:var(--soft)}
+.row .main{flex:1;min-width:0}
+.row .title{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .sub{color:var(--steel);font-size:13px}
+.row .right{text-align:right;font-size:13px;color:var(--steel);flex:none}
+.empty{padding:28px;text-align:center;color:var(--steel)}
+
+/* detalhe do modelo */
+.detail{margin-top:22px}
+.file{display:grid;grid-template-columns:auto 1fr auto;gap:16px;padding:16px;border-top:1px solid var(--line);align-items:start}
+.file:first-child{border-top:0}
+.file .q{font:700 18px/1.2 var(--head)}
+.file .facts{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13.5px;color:var(--steel);margin:4px 0 8px}
+.file p{margin:2px 0;max-width:64ch}
+.tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:999px;border:1px solid var(--go);color:var(--go);margin-left:8px;vertical-align:2px}
+details.more summary{cursor:pointer;color:var(--accent);font-size:13.5px;margin-top:6px}
+details.more div{font-size:13.5px;color:var(--steel);margin-top:6px}
+@media (max-width:600px){.file{grid-template-columns:auto 1fr}.file .act{grid-column:2}}
+
+.bar{height:6px;background:var(--soft);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar span{display:block;height:100%;background:var(--accent)}
+pre{background:#1D2730;color:#DCE6EE;padding:14px;border-radius:6px;overflow-x:auto;font:13px/1.5 var(--mono);margin:8px 0 0}
+.log{max-height:180px;overflow:auto}
+.form{display:flex;gap:8px;flex-wrap:wrap}
+.form input{flex:1;min-width:220px;padding:10px 12px;border:1px solid var(--line);border-radius:5px;background:var(--panel);font-family:var(--mono)}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--panel);padding:10px 18px;border-radius:5px;font-size:14px;max-width:90vw}
+.compare{display:flex;gap:24px;margin-top:10px;flex-wrap:wrap}
+.compare div b{display:block;font:700 26px/1.1 var(--head)}
+@media (prefers-reduced-motion:no-preference){.farol i{transition:background .3s}}
+
+/* ajustes automáticos */
+.tuned{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:12px 0}
+.tuned div{background:var(--soft);border-radius:5px;padding:10px}
+.tuned b{display:block;font:700 19px/1.2 var(--head)}
+.tuned span{font-size:12.5px;color:var(--steel)}
+@media (max-width:600px){.tuned{grid-template-columns:1fr 1fr}}
+ul.notes{margin:6px 0 0;padding-left:18px;font-size:13.5px;color:var(--steel)}
+.adv{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-top:12px;font-size:13.5px}
+.adv label{display:flex;flex-direction:column;gap:4px;color:var(--steel)}
+.adv input,.adv select{padding:7px 9px;border:1px solid var(--line);border-radius:5px;background:var(--panel);width:120px}
+
+/* conversar */
+.chat{display:flex;flex-direction:column;height:min(68vh,720px);border:1px solid var(--line);border-radius:6px;background:var(--panel)}
+.msgs{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:14px}
+.msg{max-width:78ch;white-space:pre-wrap;word-wrap:break-word}
+.msg.user{align-self:flex-end;background:var(--soft);padding:10px 14px;border-radius:12px 12px 2px 12px}
+.msg.bot{align-self:flex-start}
+.msg .think{color:var(--steel);font-size:13.5px;border-left:2px solid var(--line);padding-left:10px;margin-bottom:8px}
+.msg .meta{font-size:12px;color:var(--steel);margin-top:4px}
+.composer{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}
+.composer textarea{flex:1;resize:none;height:48px;padding:10px 12px;border:1px solid var(--line);border-radius:5px;background:var(--panel);font:inherit}
+
+/* agente */
+.roles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media (max-width:760px){.roles{grid-template-columns:1fr}}
+.role{border:1px solid var(--line);border-radius:6px;padding:12px;font-size:13.5px}
+.role b{font-size:14.5px}
+.role select,.role input,.field input,.field textarea{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:5px;background:var(--panel);margin-top:6px;font:inherit}
+.field{display:block;margin-bottom:12px;color:var(--steel);font-size:13.5px}
+.field textarea{min-height:96px;resize:vertical;color:var(--ink)}
+.field input{color:var(--ink)}
+.timeline{display:flex;flex-direction:column;gap:0;border-left:2px solid var(--line);margin-left:8px}
+.ev{position:relative;padding:4px 0 14px 20px}
+.ev::before{content:"";position:absolute;left:-7px;top:9px;width:12px;height:12px;border-radius:50%;background:var(--panel);border:2px solid var(--steel)}
+.ev[data-role="arquiteto"]::before{border-color:var(--accent)}
+.ev[data-role="testador"]::before{border-color:var(--wait)}
+.ev[data-role="desenvolvedor"]::before{border-color:#7A5CC2}
+.ev[data-role="executor"]::before{border-color:var(--ink)}
+.ev.ok::before{background:var(--go);border-color:var(--go)}
+.ev.fail::before{background:var(--stop);border-color:var(--stop)}
+.ev .who{font-weight:600;font-size:13.5px}
+.ev .who small{font-weight:400;color:var(--steel);margin-left:6px}
+.ev pre{max-height:220px;overflow:auto;white-space:pre-wrap}
+.filechips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.filechips button{border:1px solid var(--line);background:var(--soft);border-radius:4px;padding:2px 9px;font:500 12.5px var(--mono);cursor:pointer}
+.warnbox{border-left:3px solid var(--wait);background:var(--soft);padding:10px 14px;font-size:13.5px;margin-bottom:16px;border-radius:0 5px 5px 0}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <span class="farol" data-l="verde" aria-hidden="true"><i></i><i></i><i></i></span>
+    <h1>Farol</h1>
+  </div>
+  <div class="machine" id="machineLine">Lendo o hardware…</div>
+  <div class="engine-pill" id="enginePill"><span class="dot"></span><span>Nenhum modelo carregado</span></div>
+</header>
+<nav role="tablist">
+  <button role="tab" data-tab="maquina" aria-selected="true">Sua máquina</button>
+  <button role="tab" data-tab="explorar">Explorar modelos</button>
+  <button role="tab" data-tab="meus">Meus modelos</button>
+  <button role="tab" data-tab="conversar">Conversar</button>
+  <button role="tab" data-tab="agente">Agente</button>
+  <button role="tab" data-tab="conta">Conta Hugging Face</button>
+</nav>
+
+<main>
+<!-- MÁQUINA -->
+<section id="maquina">
+  <h2>O que esta máquina aguenta</h2>
+  <p class="lede">A velocidade de um modelo depende quase só de quanta memória ele ocupa e de quão rápido o computador lê essa memória. O teste mede isso em poucos segundos.</p>
+  <div class="grid2">
+    <div class="box">
+      <h3>Componentes</h3>
+      <dl class="specs" id="specs"></dl>
+    </div>
+    <div class="box">
+      <h3>Teste de desempenho</h3>
+      <div id="benchOut" class="muted">Ainda não testado. As previsões usam um palpite conservador até você rodar o teste.</div>
+      <p style="margin:14px 0 0"><button class="btn" id="benchBtn">Testar hardware</button></p>
+    </div>
+  </div>
+  <div class="box" style="margin-top:16px">
+    <h3>Tamanho de modelo × esta máquina</h3>
+    <p class="muted" style="margin:0 0 12px;font-size:14px">Previsão para modelos na quantização Q4_K_M, a mais usada. "B" é bilhões de parâmetros.</p>
+    <div class="ladder" id="ladder"></div>
+  </div>
+</section>
+
+<!-- EXPLORAR -->
+<section id="explorar" hidden>
+  <h2>Explorar modelos</h2>
+  <p class="lede">Modelos em formato GGUF do Hugging Face. O farol ao lado de cada um é uma previsão pelo tamanho; abra o modelo para ver cada versão em detalhe.</p>
+  <form class="search" id="searchForm">
+    <input id="q" placeholder="Busque por nome: qwen, llama, gemma, coder…" aria-label="Buscar modelos">
+    <button class="btn">Buscar</button>
+  </form>
+  <div id="results" class="rows"><div class="empty">Carregando os modelos mais baixados…</div></div>
+  <div id="detail" class="detail"></div>
+</section>
+
+<!-- MEUS -->
+<section id="meus" hidden>
+  <h2>Meus modelos</h2>
+  <p class="lede">Modelos baixados neste computador. Inicie um para conversar pela API ou medir a velocidade real.</p>
+  <div id="installBox"></div>
+  <div id="dlBox"></div>
+  <div id="localList" class="rows"></div>
+  <div class="box" id="tunedBox" style="margin-top:16px" hidden></div>
+  <div class="grid2" style="margin-top:16px">
+    <div class="box">
+      <h3>Motor</h3>
+      <div id="engineInfo" class="muted"></div>
+      <pre class="log" id="engineLog" hidden></pre>
+    </div>
+    <div class="box">
+      <h3>Usar nos seus projetos</h3>
+      <p class="muted" style="margin:0;font-size:14px">A API é compatível com a da OpenAI. Troque só o endereço:</p>
+<pre id="apiSnippet"></pre>
+    </div>
+  </div>
+</section>
+
+<!-- CONVERSAR -->
+<section id="conversar" hidden>
+  <h2>Conversar</h2>
+  <p class="lede" id="chatLede">Teste o modelo que está rodando. A velocidade aparece embaixo de cada resposta.</p>
+  <div class="chat">
+    <div class="msgs" id="msgs"><div class="empty" id="chatEmpty">Escreva algo para começar.</div></div>
+    <form class="composer" id="chatForm">
+      <textarea id="chatIn" placeholder="Pergunte qualquer coisa… (Enter envia, Shift+Enter quebra linha)" aria-label="Mensagem"></textarea>
+      <button class="btn" id="chatSend">Enviar</button>
+    </form>
+  </div>
+  <p style="margin-top:10px"><button class="btn ghost small" id="chatClear">Nova conversa</button></p>
+</section>
+
+<!-- AGENTE -->
+<section id="agente" hidden>
+  <h2>Agente de programação</h2>
+  <p class="lede">Descreva o que quer construir. Um arquiteto escreve a especificação, um testador escreve os testes antes do código, o desenvolvedor programa e o Python roda os testes de verdade. Se falhar, o erro real volta para o desenvolvedor corrigir.</p>
+  <div class="warnbox">O código gerado roda no seu computador. O agente só escreve na pasta escolhida e só executa os testes, com limite de 90 segundos. Use uma pasta só para isso. Nesta versão ele gera projetos em Python.</div>
+  <div class="box" style="margin-bottom:16px">
+    <h3>Quem faz cada papel</h3>
+    <p class="muted" style="margin:0 0 12px;font-size:13.5px">Com um modelo local, os três papéis usam o mesmo modelo, um de cada vez (cabe em máquinas modestas). Se a máquina for fraca, aponte só o Desenvolvedor para uma API externa compatível com OpenAI.</p>
+    <div class="roles" id="roles"></div>
+    <p style="margin:12px 0 0"><button class="btn ghost small" id="saveRoles">Salvar papéis</button></p>
+  </div>
+  <div class="box">
+    <label class="field">Pasta de trabalho<input id="agWs" placeholder="ex.: C:\projetos\minha-calculadora  ou  ~/projetos/calc"></label>
+    <label class="field">O que construir<textarea id="agTask" placeholder="ex.: uma função que valida CPF, com dígitos verificadores, aceitando com ou sem pontuação"></textarea></label>
+    <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+      <label class="field" style="margin:0">Rodadas de correção<input id="agRounds" type="number" min="1" max="8" value="4" style="width:90px"></label>
+      <button class="btn" id="agStart">Começar</button>
+      <button class="btn ghost" id="agStop" hidden>Parar</button>
+    </div>
+  </div>
+  <div class="box" id="agOut" style="margin-top:16px" hidden>
+    <h3 id="agStatus">Andamento</h3>
+    <div class="timeline" id="timeline"></div>
+    <div id="viewer"></div>
+  </div>
+</section>
+
+<!-- CONTA -->
+<section id="conta" hidden>
+  <h2>Conta Hugging Face</h2>
+  <p class="lede">Sem login você já baixa a maioria dos modelos. O login libera modelos com acesso restrito (como Llama e Gemma) depois que você aceita os termos na página de cada um.</p>
+  <div class="box" id="accountBox"></div>
+</section>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+const api = async (path, body) => {
+  const r = await fetch(path, body === undefined ? {} : {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || `Erro ${r.status}`);
+  return j;
+};
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const farol = (l, lg) => `<span class="farol${lg?' lg':''}" data-l="${l||''}" role="img" aria-label="Farol ${l||'sem previsão'}"><i></i><i></i><i></i></span>`;
+const gb = b => (b/1024**3).toFixed(b > 10*1024**3 ? 0 : 1) + ' GB';
+const fmt = n => n >= 1e6 ? (n/1e6).toFixed(1)+' mi' : n >= 1e3 ? (n/1e3).toFixed(0)+' mil' : n;
+const LIGHT_WORD = {verde:'Roda bem', amarelo:'Roda com ressalvas', vermelho:'Não recomendado'};
+function toast(msg){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.append(t);setTimeout(()=>t.remove(),3600)}
+
+// abas
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => openTab(b.dataset.tab));
+function openTab(id){
+  document.querySelectorAll('nav button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab===id));
+  document.querySelectorAll('main section').forEach(s => s.hidden = s.id !== id);
+  if (id==='meus') loadLocal();
+  if (id==='conta') loadAccount();
+  if (id==='conversar') { refreshChatLede(); $('#chatIn').focus() }
+  if (id==='agente') loadAgent();
+}
+
+// ---------- máquina
+let HW = null;
+async function loadHardware(){
+  const d = await api('/api/hardware');
+  HW = d;
+  const h = d.hardware, g = h.gpus[0];
+  $('#machineLine').textContent = `${h.ram_total_gb} GB de RAM · ${g ? g.name + (g.unified ? ' (memória unificada)' : ` ${g.vram_gb} GB`) : 'sem GPU dedicada'}`;
+  $('#specs').innerHTML = `
+    <dt>Processador</dt><dd>${esc(h.cpu)} <span class="muted">(${h.cores} núcleos)</span></dd>
+    <dt>Memória RAM</dt><dd class="num">${h.ram_total_gb} GB <span class="muted">· ${h.ram_available_gb} GB livres agora</span></dd>
+    <dt>Placa de vídeo</dt><dd>${h.gpus.length ? h.gpus.map(g=>`${esc(g.name)} <span class="muted">· ${g.vram_gb ?? '?'} GB · ${g.backend}</span>`).join('<br>') : '<span class="muted">Nenhuma detectada — tudo roda na CPU</span>'}</dd>
+    <dt>Sistema</dt><dd>${esc(h.os)} <span class="muted">${esc(h.arch)}</span></dd>
+    <dt>Disco livre</dt><dd class="num">${h.disk_free_gb} GB</dd>`;
+  renderBench(d.benchmark);
+  $('#ladder').innerHTML = d.tiers.map(t => `
+    <div class="rung" title="${esc(t.why)}">
+      ${farol(t.light, true)}
+      <b>${t.params_b}B</b>
+      <small>${t.size_gb} GB<br>${t.tokens_per_s ? '~'+t.tokens_per_s+' tok/s' : 'não cabe'}</small>
+    </div>`).join('');
+}
+function renderBench(b){
+  if (!b) return;
+  $('#benchOut').innerHTML = `
+    <div class="compare">
+      <div><b class="num">${b.cpu_bandwidth_gbs} GB/s</b><span class="muted">leitura de memória</span></div>
+      ${b.cpu_gflops ? `<div><b class="num">${b.cpu_gflops}</b><span class="muted">GFLOPS (cálculo)</span></div>` : ''}
+    </div>
+    <p class="muted" style="font-size:13.5px;margin:10px 0 0">Medido em ${esc(b.measured_at)} com ${b.threads_used} threads. A leitura de memória é o que limita a velocidade dos modelos na CPU.</p>`;
+  $('#benchBtn').textContent = 'Testar de novo';
+}
+$('#benchBtn').onclick = async e => {
+  e.target.disabled = true; e.target.textContent = 'Testando… (uns 5 segundos)';
+  try { await api('/api/benchmark', {seconds:2}); await loadHardware(); toast('Teste concluído. As previsões foram atualizadas.'); }
+  catch(err){ toast(err.message) }
+  e.target.disabled = false;
+};
+
+// ---------- explorar
+$('#searchForm').onsubmit = e => { e.preventDefault(); search($('#q').value) };
+async function search(q){
+  $('#results').innerHTML = '<div class="empty">Buscando…</div>'; $('#detail').innerHTML = '';
+  try {
+    const {results} = await api('/api/search?q=' + encodeURIComponent(q||''));
+    if (!results.length){ $('#results').innerHTML = '<div class="empty">Nada encontrado. Tente o nome da família do modelo, como "qwen" ou "llama".</div>'; return }
+    $('#results').innerHTML = results.map(m => `
+      <button class="row" data-repo="${esc(m.repo)}">
+        ${farol(m.light)}
+        <div class="main"><div class="title">${esc(m.name)}</div><div class="sub">${esc(m.author)}${m.params_b ? ' · '+m.params_b+'B parâmetros' : ''}${m.gated ? ' · exige aceitar termos' : ''}</div></div>
+        <div class="right">${m.tokens_per_s ? '~'+m.tokens_per_s+' tok/s<br>' : ''}${fmt(m.downloads)} downloads</div>
+      </button>`).join('');
+    document.querySelectorAll('#results .row').forEach(r => r.onclick = () => openModel(r.dataset.repo));
+  } catch(err){ $('#results').innerHTML = `<div class="empty err">${esc(err.message)}</div>` }
+}
+async function openModel(repo){
+  const box = $('#detail');
+  box.innerHTML = '<div class="box muted">Lendo as versões disponíveis…</div>';
+  box.scrollIntoView({behavior:'smooth', block:'start'});
+  try {
+    const {card, files} = await api('/api/model?repo=' + encodeURIComponent(repo));
+    box.innerHTML = `
+      <div class="box" style="padding:0">
+        <div style="padding:20px 20px 12px">
+          <h3 style="font:700 22px/1.2 var(--head)">${esc(repo)}</h3>
+          <div class="muted" style="font-size:13.5px">${card.license ? 'Licença '+esc(card.license)+' · ' : ''}${fmt(card.downloads)} downloads${card.gated ? ' · <b>exige aceitar os termos</b> em <a href="https://huggingface.co/'+esc(repo)+'" target="_blank" rel="noopener">huggingface.co</a> (e login aqui)' : ''}</div>
+        </div>
+        ${files.length ? files.map(fileRow(repo)).join('') : '<div class="empty">Este repositório não tem arquivos .gguf.</div>'}
+      </div>`;
+    box.querySelectorAll('[data-dl]').forEach(b => b.onclick = () => download(repo, JSON.parse(b.dataset.dl)));
+  } catch(err){ box.innerHTML = `<div class="box err">${esc(err.message)}</div>` }
+}
+const fileRow = repo => f => `
+  <div class="file">
+    ${farol(f.light, true)}
+    <div>
+      <div class="q">${esc(f.quant)} <span class="muted" style="font:500 14px var(--body)">${esc(f.quant_label)}</span>${f.recommended ? '<span class="tag">recomendado</span>' : ''}</div>
+      <div class="facts"><span class="num">${f.size_gb} GB</span><span>${esc(f.where)}</span>${f.tokens_per_s ? `<span class="num">~${f.tokens_per_s} tok/s</span>` : ''}</div>
+      <p><b class="word-${f.light}">${LIGHT_WORD[f.light]}.</b> ${esc(f.why)}</p>
+      <p class="muted">${esc(f.feel)}</p>
+      <details class="more"><summary>Entender esta versão</summary><div>
+        <p>${esc(f.quant_desc)}</p>
+        <p>Memória necessária: ${f.required_gb} GB (arquivo + contexto de 4 mil tokens). Disponível para o modelo: ${f.capacity_gb} GB.</p>
+        <p>${esc(f.tip)}</p>
+        <p>Estimativa feita com: ${esc(f.estimated_with)}.</p>
+      </div></details>
+    </div>
+    <div class="act"><button class="btn small ${f.light==='vermelho'?'ghost':''}" data-dl='${esc(JSON.stringify({name:f.name, parts:f.parts}))}'>Baixar</button></div>
+  </div>`;
+async function download(repo, f){
+  try { await api('/api/download', {repo, name:f.name, parts:f.parts}); toast('Download iniciado. Acompanhe em Meus modelos.'); pollDownloads(); }
+  catch(err){ toast(err.message) }
+}
+
+// ---------- meus modelos
+let dlTimer = null;
+async function pollDownloads(){
+  const {jobs} = await api('/api/downloads');
+  const active = jobs.filter(j => j.status === 'baixando');
+  $('#dlBox').innerHTML = jobs.filter(j => j.status !== 'concluído').map(j => `
+    <div class="box" style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div><b>${esc(j.name)}</b> <span class="muted">${esc(j.repo)}</span></div>
+        <div class="muted num">${j.total ? gb(j.done)+' de '+gb(j.total) : ''} ${j.speed ? '· '+(j.speed/1024**2).toFixed(1)+' MB/s' : ''} · ${esc(j.status)}</div>
+      </div>
+      <div class="bar"><span style="width:${j.total ? (j.done/j.total*100).toFixed(1) : 0}%"></span></div>
+      ${j.error ? `<p class="err" style="margin:8px 0 0">${esc(j.error)}</p>` : ''}
+      ${j.status==='baixando' ? `<p style="margin:10px 0 0"><button class="btn small ghost" onclick="cancelDl('${esc(j.id)}')">Cancelar</button></p>` : ''}
+    </div>`).join('');
+  clearTimeout(dlTimer);
+  if (active.length) dlTimer = setTimeout(pollDownloads, 1000);
+  else if (jobs.some(j => j.status === 'concluído') && !$('#meus').hidden) loadLocal(false);
+}
+window.cancelDl = async id => { await api('/api/download/cancel', {id}); pollDownloads() };
+
+async function loadLocal(withDl = true){
+  if (withDl) pollDownloads();
+  const [{models}, eng] = await Promise.all([api('/api/local'), api('/api/engine')]);
+  $('#localList').innerHTML = models.length ? models.map(m => {
+    const running = eng.model === m.path;
+    return `
+    <div class="row" style="cursor:default">
+      ${farol(m.light)}
+      <div class="main">
+        <div class="title">${esc(m.name)}</div>
+        <div class="sub">${esc(m.repo)} · ${gb(m.size)} · previsto ~${m.tokens_per_s} tok/s${m.measured ? ` · <b>medido ${m.measured.tokens_per_s} tok/s</b>` : ''}</div>
+      </div>
+      <div class="right" style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+        ${running
+          ? `<button class="btn small" onclick="openTab('conversar')">Conversar</button><button class="btn small ghost" onclick="speedTest(this)">Medir velocidade</button><button class="btn small ghost" onclick="stopEngine()">Parar</button>`
+          : `<button class="btn small" data-start="${esc(m.path)}">Iniciar</button><button class="btn small ghost" data-del="${esc(m.path)}">Apagar</button>`}
+      </div>
+    </div>`}).join('') : '<div class="empty">Nenhum modelo baixado ainda. Escolha um em Explorar modelos.</div>';
+  document.querySelectorAll('[data-start]').forEach(b => b.onclick = () => startEngine(b.dataset.start));
+  document.querySelectorAll('[data-del]').forEach(b => b.onclick = () => delModel(b.dataset.del));
+  renderEngine(eng);
+}
+function renderEngine(e){
+  const pill = $('#enginePill');
+  pill.querySelector('.dot').className = 'dot ' + (e.ready ? 'on' : e.running ? 'warm' : '');
+  pill.lastElementChild.textContent = e.ready ? `Rodando: ${e.model.split(/[\\/]/).pop()}` : e.running ? 'Carregando modelo…' : 'Nenhum modelo carregado';
+  ENGINE = e;
+  $('#engineInfo').innerHTML = e.engine
+    ? `Usando <b>${esc(e.engine.kind)}</b>. ${e.ready ? 'Pronto para receber pedidos.' : e.running ? 'Carregando o modelo na memória…' : e.crashed ? '<span class="err">O motor não conseguiu abrir este modelo, nem com as configurações mais seguras. Veja o registro abaixo.</span>' : 'Parado.'}`
+    : `Nenhum motor instalado ainda. Escolha um acima.`;
+  if (e.attempts?.length > 1 || e.crashed) $('#engineInfo').innerHTML += `<ul class="notes">${e.attempts.map((a,i) => `<li>Tentativa ${i+1}: ${esc(a.label)} — <b class="${a.result==='ok'?'word-verde':a.result==='falhou'?'word-vermelho':''}">${a.result}</b></li>`).join('')}</ul>`;
+  renderInstall(e);
+  renderTuned(e);
+  const log = $('#engineLog');
+  log.hidden = !e.log_tail?.length; log.textContent = (e.log_tail||[]).join('\n');
+  if (e.ready && pendingChat){ pendingChat = false; toast('Modelo pronto. Abrindo a conversa.'); openTab('conversar') }
+  const base = location.origin + '/v1';
+  $('#apiSnippet').textContent = `from openai import OpenAI\nclient = OpenAI(base_url="${base}", api_key="local")\n\nr = client.chat.completions.create(\n    model="local",\n    messages=[{"role": "user", "content": "Olá!"}],\n)\nprint(r.choices[0].message.content)`;
+  clearTimeout(window._engT);
+  if ((e.running && !e.ready) || (e.attempts?.some(a => a.result==='tentando') && !e.crashed)) window._engT = setTimeout(async () => { renderEngine(await api('/api/engine')); if(!$('#meus').hidden) loadLocal(false) }, 1500);
+}
+let ENGINE = {}, pendingChat = false;
+window.startEngine = async (p, overrides) => {
+  try { pendingChat = true; renderEngine(await api('/api/engine/start', {path:p, overrides})); loadLocal(false) }
+  catch(err){ pendingChat = false; toast(err.message) }
+};
+
+// instalação do motor
+let instTimer = null;
+async function renderInstall(e){
+  const box = $('#installBox');
+  const wantSwitch = e.crashed && e.engine?.kind === 'llama-cpp-python';
+  if (e.engine && !wantSwitch && !instTimer){ box.innerHTML = ''; return }
+  const s = await api('/api/engine/install');
+  const busy = s.status === 'instalando';
+  const opts = s.options.map(o => `
+      <div class="role" style="display:flex;flex-direction:column;gap:6px">
+        <b>${esc(o.title)}${o.recommended ? '<span class="tag">recomendado</span>' : ''}</b>
+        <span class="muted">${esc(o.desc)}</span>
+        <span><button class="btn small ${o.recommended ? '' : 'ghost'}" data-inst="${o.kind}" ${busy ? 'disabled' : ''}>Instalar</button></span>
+      </div>`).join('');
+  box.innerHTML = `
+    <div class="box" style="margin-bottom:16px">
+      <h3>${s.status==='concluído' ? 'Motor instalado' : wantSwitch ? 'Trocar de motor' : 'Instalar o motor'}</h3>
+      <p class="muted" style="margin:0 0 12px;font-size:14px">${s.status==='concluído'
+        ? 'Pronto. Escolha um modelo abaixo e clique em Iniciar.'
+        : wantSwitch ? 'O llama-cpp-python não conseguiu abrir este modelo. O motor oficial do llama.cpp costuma resolver: é mais atualizado e mais estável no Windows.'
+        : 'O motor é o programa que roda o modelo. O Farol baixa a versão certa para a sua placa de vídeo.'}</p>
+      ${s.status!=='concluído' ? `<div class="roles" style="grid-template-columns:1fr 1fr">${opts}</div>` : ''}
+      ${s.plan ? `<p style="margin:12px 0 0;font-size:14px">Versão: <b>${esc(s.plan.variant)}</b>${busy ? ' · instalando…' : ''}</p>` : ''}
+      ${s.log.length ? `<pre class="log">${esc(s.log.join('\n'))}</pre>` : ''}
+    </div>`;
+  const pre = box.querySelector('pre'); if (pre) pre.scrollTop = pre.scrollHeight;
+  box.querySelectorAll('[data-inst]').forEach(b => b.onclick = async () => { await api('/api/engine/install', {kind:b.dataset.inst}); renderInstall({}) });
+  clearTimeout(instTimer); instTimer = null;
+  if (busy) instTimer = setTimeout(() => renderInstall({}), 1500);
+  else if (s.status === 'concluído') renderEngine(await api('/api/engine'));
+}
+
+// ajustes automáticos
+function renderTuned(e){
+  const box = $('#tunedBox'), s = e.settings;
+  if (!s || !e.running){ box.hidden = true; return }
+  box.hidden = false;
+  const gpuTxt = s.n_gpu_layers >= 999 ? `${s.layers}/${s.layers}` : `${s.n_gpu_layers}/${s.layers}`;
+  box.innerHTML = `
+    <h3>Ajustado para esta máquina</h3>
+    <div class="tuned">
+      <div><b class="num">${gpuTxt}</b><span>camadas na GPU</span></div>
+      <div><b class="num">${s.n_ctx.toLocaleString('pt-BR')}</b><span>tokens de contexto</span></div>
+      <div><b class="num">${s.n_threads}</b><span>threads</span></div>
+      <div><b>${s.flash_attn ? 'Ligado' : 'Desligado'}</b><span>flash attention</span></div>
+    </div>
+    <ul class="notes">${s.notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>
+    <details class="more"><summary>Ajustar manualmente</summary>
+      <form class="adv" id="advForm">
+        <label>Contexto<select name="n_ctx">${[2048,4096,8192,16384,32768].filter(c => c <= s.model_ctx_max).map(c => `<option ${c===s.n_ctx?'selected':''}>${c}</option>`).join('')}</select></label>
+        <label>Camadas na GPU<input name="n_gpu_layers" type="number" min="0" max="999" value="${s.n_gpu_layers}"></label>
+        <label>Threads<input name="n_threads" type="number" min="1" max="128" value="${s.n_threads}"></label>
+        <button class="btn small">Reiniciar com estes ajustes</button>
+      </form>
+    </details>`;
+  $('#advForm').onsubmit = ev => {
+    ev.preventDefault();
+    const f = new FormData(ev.target);
+    startEngine(e.model, {n_ctx:+f.get('n_ctx'), n_gpu_layers:+f.get('n_gpu_layers'), n_threads:+f.get('n_threads')});
+  };
+}
+
+// ---------- conversar
+let chatHistory = [], chatAbort = null;
+function refreshChatLede(){
+  $('#chatLede').innerHTML = ENGINE.ready
+    ? `Conversando com <b>${esc(ENGINE.model.split(/[\\/]/).pop())}</b>. A velocidade aparece embaixo de cada resposta.`
+    : 'Nenhum modelo rodando. Inicie um em <a href="#" onclick="openTab(\'meus\');return false">Meus modelos</a>.';
+}
+function splitThink(t){
+  const m = t.match(/<think>([\s\S]*?)(<\/think>|$)/);
+  if (!m) return {think:'', text:t};
+  return {think:m[1].trim(), text:t.replace(m[0], '').trim()};
+}
+function addMsg(role, text){
+  $('#chatEmpty')?.remove();
+  const d = document.createElement('div'); d.className = 'msg ' + role;
+  d.innerHTML = role==='user' ? esc(text) : '<div class="think" hidden></div><div class="body"></div><div class="meta"></div>';
+  $('#msgs').append(d); $('#msgs').scrollTop = 1e9; return d;
+}
+$('#chatIn').onkeydown = e => { if (e.key==='Enter' && !e.shiftKey){ e.preventDefault(); $('#chatForm').requestSubmit() } };
+$('#chatClear').onclick = () => { chatHistory = []; $('#msgs').innerHTML = '<div class="empty" id="chatEmpty">Escreva algo para começar.</div>' };
+$('#chatForm').onsubmit = async e => {
+  e.preventDefault();
+  if (chatAbort){ chatAbort.abort(); return }
+  const text = $('#chatIn').value.trim(); if (!text) return;
+  if (!ENGINE.ready){ toast('Inicie um modelo em Meus modelos primeiro.'); return }
+  $('#chatIn').value = ''; addMsg('user', text); chatHistory.push({role:'user', content:text});
+  const box = addMsg('bot', ''); let full = '', chunks = 0, t0 = performance.now(), tFirst = null;
+  chatAbort = new AbortController(); $('#chatSend').textContent = 'Parar';
+  try {
+    const r = await fetch('/v1/chat/completions', {method:'POST', headers:{'Content-Type':'application/json'}, signal:chatAbort.signal,
+      body:JSON.stringify({messages:chatHistory, stream:true, temperature:0.7})});
+    if (!r.ok) throw new Error((await r.json().catch(()=>({}))).error?.message || 'Erro ' + r.status);
+    const reader = r.body.getReader(), dec = new TextDecoder(); let buf = '';
+    while (true){
+      const {done, value} = await reader.read(); if (done) break;
+      buf += dec.decode(value, {stream:true});
+      const lines = buf.split('\n'); buf = lines.pop();
+      for (const line of lines){
+        if (!line.startsWith('data:')) continue;
+        const data = line.slice(5).trim(); if (data === '[DONE]') continue;
+        let delta = ''; try { delta = JSON.parse(data).choices?.[0]?.delta?.content || '' } catch {}
+        if (!delta) continue;
+        if (!tFirst) tFirst = performance.now();
+        full += delta; chunks++;
+        const {think, text:shown} = splitThink(full);
+        const th = box.querySelector('.think'); th.hidden = !think; th.textContent = think;
+        box.querySelector('.body').textContent = shown;
+        const secs = (performance.now() - tFirst) / 1000;
+        box.querySelector('.meta').textContent = secs > 0.3 ? `${(chunks/secs).toFixed(1)} tokens/s` : '';
+        $('#msgs').scrollTop = 1e9;
+      }
+    }
+    const secs = (performance.now() - (tFirst||t0)) / 1000;
+    box.querySelector('.meta').textContent = `${chunks} tokens · ${(chunks/Math.max(secs,.01)).toFixed(1)} tokens/s · primeira palavra em ${(((tFirst||t0) - t0)/1000).toFixed(1)}s`;
+    chatHistory.push({role:'assistant', content:splitThink(full).text});
+  } catch(err){
+    if (err.name !== 'AbortError') box.querySelector('.body').innerHTML = `<span class="err">${esc(err.message)}</span>`;
+    else chatHistory.push({role:'assistant', content:splitThink(full).text});
+  }
+  chatAbort = null; $('#chatSend').textContent = 'Enviar';
+};
+
+// ---------- agente
+const ROLE_NAMES = {arquiteto:'Arquiteto', testador:'Testador', desenvolvedor:'Desenvolvedor', executor:'Executor de testes', sistema:'Farol'};
+const ROLE_JOBS = {arquiteto:'Transforma o pedido em especificação', testador:'Escreve os testes antes do código', desenvolvedor:'Programa e corrige'};
+let agSince = 0, agTimer = null, agLoaded = false;
+async function loadAgent(){
+  if (!agLoaded){
+    agLoaded = true;
+    const models = await api('/api/agent/models');
+    $('#roles').innerHTML = Object.entries(models).map(([r, m]) => `
+      <div class="role" data-role="${r}">
+        <b>${ROLE_NAMES[r]}</b><div class="muted">${ROLE_JOBS[r]}</div>
+        <select data-k="type"><option value="local" ${m.type!=='api'?'selected':''}>Modelo local</option><option value="api" ${m.type==='api'?'selected':''}>API externa</option></select>
+        <div data-api ${m.type!=='api'?'hidden':''}>
+          <input data-k="base_url" placeholder="https://api.openai.com/v1" value="${esc(m.base_url||'')}">
+          <input data-k="model" placeholder="nome do modelo" value="${esc(m.model||'')}">
+          <input data-k="api_key" type="password" placeholder="chave da API" value="${esc(m.api_key||'')}">
+        </div>
+      </div>`).join('');
+    document.querySelectorAll('.role select').forEach(s => s.onchange = () => s.parentElement.querySelector('[data-api]').hidden = s.value !== 'api');
+    const st = await api('/api/agent');
+    if (st.last_workspace) $('#agWs').value = st.last_workspace;
+    if (st.events?.length || st.workspace){ agSince = 0; $('#timeline').innerHTML = ''; pollAgent() }
+  }
+}
+$('#saveRoles').onclick = async () => {
+  const models = {};
+  document.querySelectorAll('.role').forEach(el => { const m = {}; el.querySelectorAll('[data-k]').forEach(i => m[i.dataset.k] = i.value); models[el.dataset.role] = m });
+  try { await api('/api/agent/models', {models}); toast('Papéis salvos.') } catch(err){ toast(err.message) }
+};
+$('#agStart').onclick = async () => {
+  try {
+    await api('/api/agent/start', {workspace:$('#agWs').value, task:$('#agTask').value, max_rounds:+$('#agRounds').value});
+    agSince = 0; $('#timeline').innerHTML = ''; $('#viewer').innerHTML = ''; pollAgent();
+  } catch(err){ toast(err.message) }
+};
+$('#agStop').onclick = () => api('/api/agent/stop', {});
+async function pollAgent(){
+  const st = await api('/api/agent?since=' + agSince);
+  $('#agOut').hidden = false;
+  const running = st.status === 'rodando';
+  $('#agStart').hidden = running; $('#agStop').hidden = !running;
+  $('#agStatus').textContent = {rodando:'Trabalhando…', 'concluído':'Pronto: todos os testes passaram', incompleto:'Terminou com testes falhando', erro:'Parou com erro', parado:'Parado'}[st.status] || st.status;
+  for (const ev of st.events){ agSince = ev.i + 1; $('#timeline').append(renderEvent(ev)) }
+  clearTimeout(agTimer);
+  if (running) agTimer = setTimeout(pollAgent, 1200);
+}
+function renderEvent(ev){
+  const d = document.createElement('div'); d.className = 'ev'; d.dataset.role = ev.role;
+  const who = `<div class="who">${ROLE_NAMES[ev.role] || ev.role}<small>${ev.t}s</small></div>`;
+  if (ev.kind === 'llm'){ d.innerHTML = `${who}<div class="muted" style="font-size:13px">Respondeu em ${ev.seconds}s${ev.tokens ? ` · ${ev.tokens} tokens (${(ev.tokens/ev.seconds).toFixed(1)} tok/s)` : ''}</div>`; return d }
+  if (ev.kind === 'plan') d.innerHTML = `${who}<pre>${esc(ev.text)}</pre>`;
+  else if (ev.kind === 'files') d.innerHTML = `${who}<div class="muted" style="font-size:13.5px">Escreveu:</div>${chips(ev.files)}`;
+  else if (ev.kind === 'tests'){
+    d.classList.add(ev.ok ? 'ok' : 'fail');
+    d.innerHTML = `${who}<div><b class="${ev.ok?'word-verde':'word-vermelho'}">${ev.ok ? 'Passou' : 'Falhou'}</b> <span class="muted">${esc(ev.summary)}</span></div>
+      <details class="more"><summary>Ver saída dos testes</summary><pre>${esc(ev.text)}</pre></details>`;
+  }
+  else if (ev.kind === 'done'){ d.classList.add(ev.text.includes('passaram') ? 'ok' : 'fail'); d.innerHTML = `${who}<div>${esc(ev.text)}</div>${ev.files ? chips(ev.files) : ''}` }
+  else if (ev.kind === 'error'){ d.classList.add('fail'); d.innerHTML = `${who}<div class="err">${esc(ev.text)}</div>` }
+  else d.innerHTML = `${who}<div class="${ev.kind==='warn'?'muted':''}" style="font-size:14px">${esc(ev.text)}</div>`;
+  d.querySelectorAll('[data-file]').forEach(b => b.onclick = () => viewFile(b.dataset.file));
+  return d;
+}
+const chips = files => `<div class="filechips">${files.map(f => `<button data-file="${esc(f)}">${esc(f)}</button>`).join('')}</div>`;
+async function viewFile(f){
+  try { const {content} = await api('/api/agent/file?path=' + encodeURIComponent(f));
+    $('#viewer').innerHTML = `<h3 style="margin-top:16px">${esc(f)}</h3><pre>${esc(content)}</pre>`;
+    $('#viewer').scrollIntoView({behavior:'smooth', block:'nearest'}) } catch(err){ toast(err.message) }
+}
+window.stopEngine = async () => { renderEngine(await api('/api/engine/stop', {})); loadLocal(false) };
+window.delModel = async p => { if (!confirm('Apagar este modelo do disco?')) return; await api('/api/local/delete', {path:p}); loadLocal(false) };
+window.speedTest = async btn => {
+  btn.disabled = true; btn.textContent = 'Medindo…';
+  try { const r = await api('/api/engine/test', {max_tokens:128}); toast(`${r.tokens_per_s} tokens/s reais (${r.tokens} tokens em ${r.seconds}s)`); loadLocal(false) }
+  catch(err){ toast(err.message); btn.disabled = false; btn.textContent = 'Medir velocidade' }
+};
+
+// ---------- conta
+async function loadAccount(){
+  const {account} = await api('/api/account');
+  $('#accountBox').innerHTML = account ? `
+      <div style="display:flex;align-items:center;gap:14px">
+        ${account.avatar ? `<img src="${esc(account.avatar)}" alt="" width="44" height="44" style="border-radius:50%">` : ''}
+        <div><b>${esc(account.fullname || account.name)}</b><div class="muted">@${esc(account.name)} · conectado</div></div>
+        <button class="btn ghost small" style="margin-left:auto" id="logoutBtn">Sair</button>
+      </div>` : `
+      <h3>Entrar com token de acesso</h3>
+      <ol class="muted" style="margin:0 0 14px;padding-left:20px;font-size:14px">
+        <li>Abra <a href="https://huggingface.co/settings/tokens" target="_blank" rel="noopener">huggingface.co/settings/tokens</a></li>
+        <li>Crie um token do tipo <b>Read</b></li>
+        <li>Cole aqui. Ele fica salvo só neste computador.</li>
+      </ol>
+      <form class="form" id="loginForm"><input id="token" type="password" placeholder="hf_…" autocomplete="off" aria-label="Token do Hugging Face"><button class="btn">Entrar</button></form>
+      <p id="loginErr" class="err" style="margin:8px 0 0"></p>`;
+  $('#logoutBtn') && ($('#logoutBtn').onclick = async () => { await api('/api/logout', {}); loadAccount() });
+  $('#loginForm') && ($('#loginForm').onsubmit = async e => {
+    e.preventDefault(); $('#loginErr').textContent = '';
+    try { await api('/api/login', {token: $('#token').value}); toast('Conectado ao Hugging Face.'); loadAccount() }
+    catch(err){ $('#loginErr').textContent = err.message }
+  });
+}
+
+loadHardware().then(() => search('')).catch(err => $('#machineLine').textContent = err.message);
+api('/api/engine').then(renderEngine);
+</script>
+</body>
+</html>

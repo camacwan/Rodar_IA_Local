@@ -1,0 +1,3 @@
+# Opcionais: deixam o teste de hardware mais preciso. O app funciona sem eles.
+psutil
+numpy
