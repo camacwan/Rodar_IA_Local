@@ -118,7 +118,10 @@ def install_plan() -> dict:
     return {"variant": "CPU", "index": f"{WHEELS}/cpu", "accel": "cpu"}
 
 
-GH_RELEASES = os.environ.get("FAROL_GH_API", "https://api.github.com/repos/ggml-org/llama.cpp/releases/latest")
+# Lista recente de lançamentos. O llama.cpp publica versões numeradas (v0.x) sem
+# programas prontos e compilações frequentes (bNNNN) com os .zip — então o app
+# procura, do mais novo para o mais antigo, o primeiro que tenha o arquivo certo.
+GH_RELEASES = os.environ.get("FAROL_GH_API", "https://api.github.com/repos/ggml-org/llama.cpp/releases?per_page=30")
 
 
 def _has_vulkan() -> bool:
@@ -128,55 +131,73 @@ def _has_vulkan() -> bool:
         "/usr/lib/x86_64-linux-gnu/libvulkan.so.1", "/usr/lib/libvulkan.so.1"))
 
 
+_ACCEL = ("cuda", "cudart", "vulkan", "hip", "rocm", "radeon", "sycl", "opencl", "openvino",
+          "kompute", "musa", "cann", "s390x", "xcframework", "android", "ios")
+
+
+def _tokens(name: str) -> set[str]:
+    return set(re.split(r"[-_.]+", name.lower()))
+
+
 def pick_assets(assets: list[dict], system: str, machine: str,
                 cuda: tuple[int, int] | None, vulkan: bool) -> tuple[str, list[dict]]:
-    """Escolhe o(s) arquivo(s) do release oficial do llama.cpp para esta máquina.
+    """Escolhe o(s) arquivo(s) prontos do llama.cpp para esta máquina.
 
-    Os nomes seguem o padrão llama-<tag>-bin-<plataforma>.zip (ou .tar.gz).
-    Devolve (descrição, [assets]). Lista vazia = nada compatível.
+    Tolerante a variações de nome (ex.: llama-b1234-bin-win-cuda-12.4-x64.zip,
+    llama-win-x64-cuda12.4.zip). Devolve (descrição, [assets]); lista vazia = nada.
     """
-    names = {a["name"].lower(): a for a in assets if a["name"].lower().endswith((".zip", ".tar.gz"))}
     arch = "arm64" if machine.lower() in ("arm64", "aarch64") else "x64"
+    arch_alias = {"x64": {"x64", "x86", "amd64", "x86_64"}, "arm64": {"arm64", "aarch64"}}[arch]
+    other_arch = {"x64": {"arm64", "aarch64"}, "arm64": {"x64", "amd64", "x86_64"}}[arch]
+    os_alias = {"Windows": {"win", "windows", "win64"}, "Darwin": {"macos", "darwin", "osx", "mac"},
+                "Linux": {"ubuntu", "linux"}}.get(system, {"linux"})
 
-    def find(*must: str, exclude: tuple[str, ...] = ()) -> dict | None:
-        for n, a in sorted(names.items()):
-            if n.startswith("llama-") and all(m in n for m in must) and not any(x in n for x in exclude):
+    pool = []
+    for a in assets:
+        n = a["name"].lower()
+        if not n.endswith((".zip", ".tar.gz", ".tgz")):
+            continue
+        t = _tokens(n.replace("x86_64", "x86-64").replace("x86-64", "x64"))
+        if not (t & os_alias) or (t & other_arch and not t & arch_alias):
+            continue
+        pool.append((n, t, a))
+
+    def plain(accel: str | None) -> dict | None:
+        for n, t, a in sorted(pool, key=lambda x: x[0]):
+            if "cudart" in n:
+                continue
+            has = {k for k in _ACCEL if k in n}
+            if accel is None and not has:
+                return a
+            if accel and accel in n and has <= {accel}:
                 return a
         return None
 
     if system == "Darwin":
-        a = find("bin-macos-" + arch)
+        a = plain(None)
         return ("macOS " + ("Apple Silicon (Metal)" if arch == "arm64" else "Intel"), [a] if a else [])
 
-    if system == "Windows":
-        if cuda:
-            # o maior CUDA que o driver suporta
-            best = None
-            for n, a in names.items():
-                m = re.search(r"bin-win-cuda-?(\d+)\.(\d+)-" + arch, n)
-                if n.startswith("llama-") and m:
-                    v = (int(m.group(1)), int(m.group(2)))
-                    if v <= cuda and (best is None or v > best[0]):
-                        best = (v, a)
-            if best:
-                v = f"{best[0][0]}.{best[0][1]}"
-                runtime = next((a for n, a in names.items()
-                                if n.startswith("cudart-") and f"cuda-{v}" in n and arch in n), None)
-                return (f"Windows NVIDIA CUDA {v}", [best[1]] + ([runtime] if runtime else []))
-        if vulkan:
-            a = find("bin-win-vulkan-" + arch)
-            if a:
-                return ("Windows Vulkan (GPU AMD, Intel ou NVIDIA)", [a])
-        a = find("bin-win-cpu-" + arch) or find("bin-win-" + arch, exclude=("cuda", "vulkan", "hip", "sycl", "opencl"))
-        return ("Windows CPU", [a] if a else [])
+    if system == "Windows" and cuda:
+        best = None
+        for n, t, a in pool:
+            m = re.search(r"cuda[-_]?(\d+)[._](\d+)", n)
+            if m and "cudart" not in n:
+                v = (int(m.group(1)), int(m.group(2)))
+                if v <= cuda and (best is None or v > best[0]):
+                    best = (v, a)
+        if best:
+            major, minor = best[0]
+            rt = next((a for n, t, a in pool if "cudart" in n
+                       and re.search(rf"cuda[-_]?{major}[._]{minor}(?!\d)", n)), None)
+            return (f"Windows NVIDIA CUDA {major}.{minor}", [best[1]] + ([rt] if rt else []))
 
-    # Linux
+    label = "Windows" if system == "Windows" else "Linux"
     if vulkan:
-        a = find("bin-ubuntu-vulkan-" + arch)
+        a = plain("vulkan")
         if a:
-            return ("Linux Vulkan", [a])
-    a = find("bin-ubuntu-" + arch, exclude=("vulkan", "cuda", "rocm", "hip", "sycl", "openvino", "s390x"))
-    return ("Linux CPU", [a] if a else [])
+            return (f"{label} Vulkan (GPU AMD, Intel ou NVIDIA)", [a])
+    a = plain("cpu") or plain(None)
+    return (f"{label} CPU", [a] if a else [])
 
 
 def install_options() -> list[dict]:
@@ -222,16 +243,30 @@ class Installer:
 
     # -------- motor oficial (binário)
     def _run_binary(self) -> bool:
-        self._say("Consultando a versão mais recente do llama.cpp no GitHub…")
+        self._say("Procurando a compilação mais recente do llama.cpp no GitHub…")
         req = urllib.request.Request(GH_RELEASES, headers={"User-Agent": "Farol", "Accept": "application/vnd.github+json"})
         with urllib.request.urlopen(req, timeout=30) as r:
-            rel = json.loads(r.read())
-        tag = rel.get("tag_name", "latest")
+            data = json.loads(r.read())
+        releases = [data] if isinstance(data, dict) else data
         system, machine = platform.system(), platform.machine()
-        choices = [pick_assets(rel.get("assets", []), system, machine, _cuda_version(), _has_vulkan())]
-        cpu_choice = pick_assets(rel.get("assets", []), system, machine, None, False)
-        if cpu_choice[1] and cpu_choice[1] != choices[0][1]:
-            choices.append(cpu_choice)  # plano B: versão só CPU, que abre em qualquer máquina
+        cuda, vulkan = _cuda_version(), _has_vulkan()
+        rel, choices = None, []
+        for cand in releases:
+            if cand.get("draft"):
+                continue
+            first = pick_assets(cand.get("assets", []), system, machine, cuda, vulkan)
+            if first[1]:
+                rel = cand
+                choices = [first]
+                cpu_choice = pick_assets(cand.get("assets", []), system, machine, None, False)
+                if cpu_choice[1] and cpu_choice[1] != first[1]:
+                    choices.append(cpu_choice)  # plano B: versão só CPU, que abre em qualquer máquina
+                break
+        tag = (rel or {}).get("tag_name", "?")
+        if rel is None:
+            self._say(f"Nenhum dos {len(releases)} lançamentos recentes tem um pacote pronto para {system} {machine}.")
+        else:
+            self._say(f"Compilação escolhida: {tag}")
         for n, (desc, assets) in enumerate(choices):
             self.state["plan"] = {"variant": f"{desc} · versão {tag}"}
             if not assets:

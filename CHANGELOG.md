@@ -2,6 +2,12 @@
 
 Mudanças de cada versão do Farol.
 
+## v0.3.3 — 2026-10-26
+
+### Corrigido
+- "Não consegui instalar um motor pronto (versão v0.7.0)". O llama.cpp passou a publicar versões numeradas (v0.x) sem programas prontos. Os arquivos para baixar ficam nas compilações frequentes (bNNNN). Agora o Farol percorre os lançamentos recentes, do mais novo para o mais antigo, e usa o primeiro que tenha o arquivo certo para a máquina.
+- A escolha do arquivo aceita variações no nome (por exemplo, `cuda-12.4` ou `cuda12.4`, `x64` ou `x86_64`, `.zip` ou `.tar.gz`).
+
 ## v0.3.2 — 2026-10-26
 
 ### Corrigido
