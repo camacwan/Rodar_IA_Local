@@ -2,6 +2,15 @@
 
 Mudanças de cada versão do Farol.
 
+## v0.3.1 — 2026-10-26
+
+### Corrigido
+- Conversa muito mais lenta que o teste de velocidade (por exemplo, 130 tok/s no teste e 8 tok/s no chat). No mesmo computador, o chat agora recebe a resposta direto do motor. O servidor do Farol também passou a enviar cada pedaço na hora, sem esperar o TCP juntar pacotes (algoritmo de Nagle), o que no Windows atrasava o streaming.
+
+### Adicionado
+- O chat mostra duas velocidades: a do motor (medida pelo próprio llama-server) e a que chega na tela. Se a da tela for bem menor, ele avisa que a entrega está atrasando.
+- Modelos que "pensam" antes de responder (que mandam o raciocínio separado, em `reasoning_content`) agora mostram esse raciocínio em cinza acima da resposta, em vez de parecerem travados.
+
 ## v0.3 — 2026-10-26
 
 ### Adicionado

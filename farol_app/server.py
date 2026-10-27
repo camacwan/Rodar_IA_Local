@@ -37,7 +37,10 @@ def _with_estimate(size_bytes: int, name: str) -> dict:
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "Farol/0.1"
+    server_version = "Farol/0.3"
+    # Envia cada pedaço na hora. Sem isso, no Windows o TCP segura pacotes pequenos
+    # (algoritmo de Nagle + ACK atrasado) e o streaming cai para poucos tokens/s.
+    disable_nagle_algorithm = True
 
     def log_message(self, fmt, *args):  # silencioso no terminal
         pass

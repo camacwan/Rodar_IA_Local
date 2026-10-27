@@ -555,11 +555,18 @@ $('#chatForm').onsubmit = async e => {
   const text = $('#chatIn').value.trim(); if (!text) return;
   if (!ENGINE.ready){ toast('Inicie um modelo em Meus modelos primeiro.'); return }
   $('#chatIn').value = ''; addMsg('user', text); chatHistory.push({role:'user', content:text});
-  const box = addMsg('bot', ''); let full = '', chunks = 0, t0 = performance.now(), tFirst = null;
+  const box = addMsg('bot', ''); let full = '', reasoning = '', chunks = 0, t0 = performance.now(), tFirst = null, server = null;
   chatAbort = new AbortController(); $('#chatSend').textContent = 'Parar';
   try {
-    const r = await fetch('/v1/chat/completions', {method:'POST', headers:{'Content-Type':'application/json'}, signal:chatAbort.signal,
-      body:JSON.stringify({messages:chatHistory, stream:true, temperature:0.7})});
+    // No mesmo computador, o chat fala direto com o motor (sem o Farol no meio);
+    // acessando de outro aparelho, passa pelo Farol.
+    const local = ['localhost','127.0.0.1','[::1]'].includes(location.hostname);
+    const base = local && ENGINE.port ? `http://127.0.0.1:${ENGINE.port}` : '';
+    const opts = {method:'POST', headers:{'Content-Type':'application/json'}, signal:chatAbort.signal,
+      body:JSON.stringify({messages:chatHistory, stream:true, temperature:0.7})};
+    let r;
+    try { r = await fetch(base + '/v1/chat/completions', opts) }
+    catch(e){ if (e.name === 'AbortError' || !base) throw e; r = await fetch('/v1/chat/completions', opts) }
     if (!r.ok) throw new Error((await r.json().catch(()=>({}))).error?.message || 'Erro ' + r.status);
     const reader = r.body.getReader(), dec = new TextDecoder(); let buf = '';
     while (true){
@@ -569,12 +576,17 @@ $('#chatForm').onsubmit = async e => {
       for (const line of lines){
         if (!line.startsWith('data:')) continue;
         const data = line.slice(5).trim(); if (data === '[DONE]') continue;
-        let delta = ''; try { delta = JSON.parse(data).choices?.[0]?.delta?.content || '' } catch {}
-        if (!delta) continue;
+        let j = null; try { j = JSON.parse(data) } catch { continue }
+        if (j.timings) server = j.timings;  // velocidade medida pelo próprio motor
+        const d = j.choices?.[0]?.delta || {};
+        // modelos que "pensam" mandam o raciocínio separado (reasoning_content)
+        const piece = (d.content || '') + (d.reasoning_content || '');
+        if (!piece) continue;
         if (!tFirst) tFirst = performance.now();
-        full += delta; chunks++;
+        full += d.content || ''; reasoning += d.reasoning_content || ''; chunks++;
         const {think, text:shown} = splitThink(full);
-        const th = box.querySelector('.think'); th.hidden = !think; th.textContent = think;
+        const allThink = (reasoning + (think ? '\n' + think : '')).trim();
+        const th = box.querySelector('.think'); th.hidden = !allThink; th.textContent = allThink;
         box.querySelector('.body').textContent = shown;
         const secs = (performance.now() - tFirst) / 1000;
         box.querySelector('.meta').textContent = secs > 0.3 ? `${(chunks/secs).toFixed(1)} tokens/s` : '';
@@ -582,7 +594,12 @@ $('#chatForm').onsubmit = async e => {
       }
     }
     const secs = (performance.now() - (tFirst||t0)) / 1000;
-    box.querySelector('.meta').textContent = `${chunks} tokens · ${(chunks/Math.max(secs,.01)).toFixed(1)} tokens/s · primeira palavra em ${(((tFirst||t0) - t0)/1000).toFixed(1)}s`;
+    const screen = chunks / Math.max(secs, .01);
+    const engineTps = server?.predicted_per_second;
+    let meta = `${chunks} tokens · primeira palavra em ${(((tFirst||t0) - t0)/1000).toFixed(1)}s · `;
+    meta += engineTps ? `motor: ${engineTps.toFixed(1)} tokens/s · na tela: ${screen.toFixed(1)} tokens/s` : `${screen.toFixed(1)} tokens/s`;
+    if (engineTps && screen < engineTps * 0.5) meta += ' (a entrega até a tela está atrasando)';
+    box.querySelector('.meta').textContent = meta;
     chatHistory.push({role:'assistant', content:splitThink(full).text});
   } catch(err){
     if (err.name !== 'AbortError') box.querySelector('.body').innerHTML = `<span class="err">${esc(err.message)}</span>`;
